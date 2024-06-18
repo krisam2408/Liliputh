@@ -1,9 +1,18 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="LiliputhApp.Views.Components.LabelCheckBox">
-    <HorizontalStackLayout>
-        <CheckBox />
-        <Label Text="Text"/>
-    </HorizontalStackLayout>
+             x:Class="LiliputhApp.Views.Components.LabelCheckBox"
+             xmlns:local="clr-namespace:LiliputhApp.Views.Components">
+    <VerticalStackLayout
+        VerticalOptions="Center">
+        <HorizontalStackLayout
+            Padding="8, 4"
+            HorizontalOptions="Center">
+            <CheckBox 
+                IsChecked="{Binding Source={RelativeSource AncestorType={x:Type local:LabelCheckBox}}, Path=Value}"/>
+            <Label 
+                VerticalTextAlignment="Center"
+                Text="{Binding Source={RelativeSource AncestorType={x:Type local:LabelCheckBox}}, Path=Text}"/>
+        </HorizontalStackLayout>
+    </VerticalStackLayout>
 </ContentView>
