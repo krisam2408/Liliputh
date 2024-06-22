@@ -1,5 +1,7 @@
 ﻿using LiliputhApp.Model;
+using LiliputhApp.Model.DataTransfer;
 using MVVMCore;
+using System.Collections.ObjectModel;
 using System.Windows.Input;
 
 namespace LiliputhApp.ViewModel;
@@ -9,8 +11,36 @@ public sealed class MainViewModel : BaseViewModel
     private string m_title;
     public string Title { get => m_title; set => SetValue(ref m_title, value); }
 
-    private Dictionary<string, string> m_files;
-    public Dictionary<string, string> Files { get => m_files; set => SetValue(ref m_files, value); }
+    private ObservableCollection<FileData> m_files;
+    public ObservableCollection<FileData> Files { get => m_files; set => SetValue(ref m_files, value); }
+
+    private readonly KeyValuePair<MergeOptions, string>[] m_mergeOptions =
+    [
+        new(MergeOptions.DontMerge, "Don't Merge"),
+        new(MergeOptions.SimpleMerge, "Merge"),
+        new(MergeOptions.TemplateMerge, "Via Template"),
+    ];
+    public KeyValuePair<MergeOptions, string>[] MergeOptionsList => m_mergeOptions;
+
+    private MergeOptions m_selectedMergeOption;
+    public int MergeOptionIndex
+    {
+        get { return (int)m_selectedMergeOption; }
+        set
+        {
+            MergeOptions val = (MergeOptions)value;
+            SetValue(ref m_selectedMergeOption, val);
+            if(val == MergeOptions.TemplateMerge)
+            {
+                IsTemplatePathVisible = true;
+                return;
+            }
+            IsTemplatePathVisible = false;
+        }
+    }
+
+    private bool m_templatePathVisible;
+    public bool IsTemplatePathVisible { get => m_templatePathVisible; set => SetValue(ref m_templatePathVisible, value); }
 
     private bool m_minify;
     public bool MinifyOption { get => m_minify; set => SetValue(ref m_minify, value); }
@@ -18,7 +48,7 @@ public sealed class MainViewModel : BaseViewModel
     public ICommand SelectFilesCommand { get; private set; }
     public ICommand ClearFilesCommand { get; private set; }
     public ICommand SetOutputCommand { get; private set; }
-    public ICommand MergeCommand { get; private set; }
+    public ICommand ApplyCommand { get; private set; }
     
     public MainViewModel()
     {
@@ -26,10 +56,12 @@ public sealed class MainViewModel : BaseViewModel
 
         m_files = new();
 
+        MergeOptionIndex = 0;
+
         SelectFilesCommand = new Command(async () => await SelectFiles());
         ClearFilesCommand = new Command(() => ClearFiles());
         SetOutputCommand = new Command(() => SetOutput());
-        MergeCommand = new Command(() => Merge());
+        ApplyCommand = new Command(() => Apply());
     }
 
     public async Task SelectFiles()
@@ -38,38 +70,22 @@ public sealed class MainViewModel : BaseViewModel
             .Default
             .PickMultipleAsync();
 
-        string[] okExtensions = Enum
-            .GetValues(typeof(AcceptedExtensions))
-            .Cast<AcceptedExtensions>()
-            .Select(e => e.ToString().ToLower())
-            .ToArray();
-
         foreach (FileResult file in files)
         {
-            string url = file.FullPath;
-            string filename = file.FileName;
+            FileData item = new(file);
 
-            string[] fileParts = filename
-                .Split('.')
-                .Select(s => s.ToLower())
-                .ToArray();
+            bool isValid = item.IsValid;
 
-            bool isAccepted = okExtensions.Contains(fileParts.Last());
-            bool notDuplicate = !Files.ContainsKey(url);
+            bool notDuplicate = !Files.Contains(item);
 
-            if(isAccepted && notDuplicate)
-            {
-                Files.Add(url, filename);
-            }
-
-            NotifyPropertyChanged(nameof(Files));
+            if(isValid && notDuplicate)
+                Files.Add(item);
         }
     }
 
     public void ClearFiles()
     {
         Files.Clear();
-        NotifyPropertyChanged(nameof(Files));
     }
 
     public void SetOutput()
@@ -77,7 +93,7 @@ public sealed class MainViewModel : BaseViewModel
         
     } 
 
-    public void Merge()
+    public void Apply()
     {
 
     }
