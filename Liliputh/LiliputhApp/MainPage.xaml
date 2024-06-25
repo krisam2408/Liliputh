@@ -23,15 +23,15 @@
                     ItemsSource="{Binding Files}"
                     SelectionMode="None">
                 <ListView.ItemTemplate>
-                    <DataTemplate>
+                    <DataTemplate x:DataType="dt:FileData">
                         <ViewCell>
                             <Grid Padding="4">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="3*"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <Label Grid.Column="0" Text="{Binding Filename}"/>
-                                <Label Grid.Column="1" Text="{Binding Extension}"/>
+                                <Label Grid.Column="0" Text="{Binding Source={RelativeSource AncestorType={x:Type dt:FileData}}, Path=Filename}"/>
+                                <Label Grid.Column="1" Text="{Binding Source={RelativeSource AncestorType={x:Type dt:FileData}}, Path=Extension}"/>
                             </Grid>
                         </ViewCell>
                     </DataTemplate>

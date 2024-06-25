@@ -7,7 +7,8 @@ public enum AcceptedExtensions
     TXT,
     JSON,
     JS,
-    CSS
+    CSS,
+    HTML
 }
 
 public enum MergeOptions
