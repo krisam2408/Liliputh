@@ -46,6 +46,8 @@
                     <RowDefinition Height="4*" />
                     <RowDefinition Height="*" />
                     <RowDefinition Height="*" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
                 <Button
@@ -57,6 +59,7 @@
                     Grid.Row="1"
                     Text="Clear Files"
                     Command="{Binding ClearFilesCommand}"
+                    BackgroundColor="Orange"
                     Margin="0, 4, 0, 0" />
 
                 <Grid
@@ -85,13 +88,28 @@
 
                 <Button
                     Grid.Row="3"
-                    Text="Output File"
+                    Text="{Binding OutputPathButtonText}"
                     Margin="0,4"
-                    Command="{Binding SetOutputCommand}"/>
+                    Command="{Binding SetOutputPathCommand}"/>
 
                 <Button
                     Grid.Row="4"
+                    Text="{Binding OutputFileButtonText}"
+                    Margin="0,4"
+                    Command="{Binding SetOutputFileCommand}"/>
+                
+                <Button
+                    Grid.Row="5"
+                    Text="Clear Output"
+                    Margin="0,4"
+                    Command="{Binding ClearOutputCommand}"
+                    BackgroundColor="Orange"
+                    IsVisible="{Binding OutputClearButtonVisibility}"/>
+                
+                <Button
+                    Grid.Row="6"
                     Text="Apply"
+                    Margin="0,4"
                     Command="{Binding ApplyCommand}"/>
 
             </Grid>

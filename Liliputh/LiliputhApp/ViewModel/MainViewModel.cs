@@ -1,4 +1,5 @@
-﻿using LiliputhApp.Model;
+﻿using CommunityToolkit.Maui.Storage;
+using LiliputhApp.Model;
 using LiliputhApp.Model.DataTransfer;
 using MVVMCore;
 using System.Collections.ObjectModel;
@@ -45,9 +46,25 @@ public sealed class MainViewModel : BaseViewModel
     private bool m_minify;
     public bool MinifyOption { get => m_minify; set => SetValue(ref m_minify, value); }
 
+    private string? m_outputPath;
+    private string? m_outputFilename;
+
+    private const string m_outputPathButtonDefaultText = "Set Output Path";
+    private string m_outputPathButtonText;
+    public string OutputPathButtonText { get => m_outputPathButtonText; set => SetValue(ref m_outputPathButtonText, value); }
+
+    private const string m_outputFileButtonDefaultText = "Set Output File";
+    private string m_outputFileButtonText;
+    public string OutputFileButtonText { get => m_outputFileButtonText; set => SetValue(ref m_outputFileButtonText, value); }
+
+    private bool m_outputClearButtonVisibility;
+    public bool OutputClearButtonVisibility { get => m_outputClearButtonVisibility; set => SetValue(ref m_outputClearButtonVisibility, value); }
+
     public ICommand SelectFilesCommand { get; private set; }
     public ICommand ClearFilesCommand { get; private set; }
-    public ICommand SetOutputCommand { get; private set; }
+    public ICommand SetOutputPathCommand { get; private set; }
+    public ICommand SetOutputFileCommand { get; private set; }
+    public ICommand ClearOutputCommand { get; private set; }
     public ICommand ApplyCommand { get; private set; }
     
     public MainViewModel()
@@ -57,10 +74,14 @@ public sealed class MainViewModel : BaseViewModel
         m_files = new();
 
         MergeOptionIndex = 0;
+        m_outputPathButtonText = m_outputPathButtonDefaultText;
+        m_outputFileButtonText = m_outputFileButtonDefaultText;
 
         SelectFilesCommand = new Command(async () => await SelectFiles());
         ClearFilesCommand = new Command(() => ClearFiles());
-        SetOutputCommand = new Command(() => SetOutput());
+        SetOutputPathCommand = new Command(async () => await SetOutputPath());
+        SetOutputFileCommand = new Command(() => SetOutputFile());
+        ClearOutputCommand = new Command(() => ClearOutput());
         ApplyCommand = new Command(() => Apply());
     }
 
@@ -88,10 +109,39 @@ public sealed class MainViewModel : BaseViewModel
         Files.Clear();
     }
 
-    public void SetOutput()
+    public async Task SetOutputPath()
     {
-        
+        FolderPickerResult folder = await FolderPicker
+            .Default
+            .PickAsync();
+
+        if (folder.Folder == null)
+            return;
+
+        m_outputPath = folder
+            .Folder
+            .Path;
+
+        OutputPathButtonText = folder.Folder.Name;
+
+        OutputClearButtonVisibility = true;
     } 
+
+    public void SetOutputFile()
+    {
+
+    }
+
+    public void ClearOutput()
+    {
+        m_outputPath = null;
+        m_outputFilename = null;
+
+        OutputPathButtonText = m_outputPathButtonDefaultText;
+        OutputFileButtonText = m_outputFileButtonDefaultText;
+
+        OutputClearButtonVisibility = false;
+    }
 
     public void Apply()
     {
