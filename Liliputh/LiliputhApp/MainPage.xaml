@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:control="clr-namespace:LiliputhApp.Views.Components"
+             xmlns:c="clr-namespace:LiliputhApp.Views.Components"
              xmlns:dt="clr-namespace:LiliputhApp.Model.DataTransfer"
              x:Class="LiliputhApp.MainPage"
              BindingContext="{Binding Terminal, Source={StaticResource Locator}}">
@@ -42,7 +42,6 @@
                 Grid.Column="1">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*" />
-                    <RowDefinition Height="*" />
                     <RowDefinition Height="4*" />
                     <RowDefinition Height="*" />
                     <RowDefinition Height="*" />
@@ -50,20 +49,16 @@
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <Button
+                <c:SingleValueButton
                     Grid.Row="0"
                     Text="Select Files"
-                    Command="{Binding SelectFilesCommand}"/>
-
-                <Button
-                    Grid.Row="1"
-                    Text="Clear Files"
-                    Command="{Binding ClearFilesCommand}"
-                    BackgroundColor="Orange"
-                    Margin="0, 4, 0, 0" />
+                    SubmitCommand="{Binding SelectFilesCommand}"
+                    CancelTooltip="Clear Files"
+                    CancelCommand="{Binding ClearFilesCommand}"
+                    CancelVisibility="{Binding ClearFilesVisibility}"/>
 
                 <Grid
-                    Grid.Row="2"
+                    Grid.Row="1"
                     Padding="0, 16">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -86,28 +81,30 @@
 
                 </Grid>
 
-                <Button
-                    Grid.Row="3"
+                <c:SingleValueButton
+                    Grid.Row="2"
                     Text="{Binding OutputPathButtonText}"
-                    Margin="0,4"
-                    Command="{Binding SetOutputPathCommand}"/>
+                    SubmitCommand="{Binding SetOutputPathCommand}"
+                    CancelTooltip="Clear Output Path"
+                    CancelCommand="{Binding ClearOutputPathCommand}"
+                    CancelVisibility="{Binding OutputPathClearVisibility}"/>
+                
+                <c:SingleValueButton
+                    Grid.Row="3"
+                    Text="{Binding OutputFileButtonText}"
+                    SubmitCommand="{Binding SetOutputFileCommand}"
+                    CancelTooltip="Clear Output File"
+                    CancelCommand="{Binding ClearOutputFileCommand}"
+                    CancelVisibility="{Binding OutputFileClearVisibility}"/>
+
+                <c:EntryInput
+                    Grid.Row="4"
+                    Placeholder="Set a file output..."
+                    AcceptCommand="{Binding AcceptFilenameCommand}"
+                    IsVisible="{Binding OutputFileEntryVisibility}"/>
 
                 <Button
-                    Grid.Row="4"
-                    Text="{Binding OutputFileButtonText}"
-                    Margin="0,4"
-                    Command="{Binding SetOutputFileCommand}"/>
-                
-                <Button
                     Grid.Row="5"
-                    Text="Clear Output"
-                    Margin="0,4"
-                    Command="{Binding ClearOutputCommand}"
-                    BackgroundColor="Orange"
-                    IsVisible="{Binding OutputClearButtonVisibility}"/>
-                
-                <Button
-                    Grid.Row="6"
                     Text="Apply"
                     Margin="0,4"
                     Command="{Binding ApplyCommand}"/>

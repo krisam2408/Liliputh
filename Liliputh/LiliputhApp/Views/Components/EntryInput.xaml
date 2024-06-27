@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:l="clr-namespace:LiliputhApp.Views.Components"
+             x:Class="LiliputhApp.Views.Components.EntryInput">
+    <Grid
+        Padding="0,4"
+        VerticalOptions="Center">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="52"/>
+        </Grid.ColumnDefinitions>
+        <Entry
+            Grid.Column="0"
+            Placeholder="{Binding Source={RelativeSource AncestorType={x:Type l:EntryInput}}, Path=Placeholder}"
+            Text="{Binding Source={RelativeSource AncestorType={x:Type l:EntryInput}}, Path=Input}"/>
+        <ImageButton
+            Grid.Column="1"
+            Source="check.png"
+            BackgroundColor="Lime"
+            Padding="4"
+            Margin="4,0,0,0"
+            CornerRadius="8"
+            ToolTipProperties.Text="Accept"
+            Command="{Binding Source={RelativeSource AncestorType={x:Type l:EntryInput}}, Path=AcceptCommand}"
+            CommandParameter="{Binding Source={RelativeSource AncestorType={x:Type l:EntryInput}}, Path=Input}"/>
+    </Grid>
+</ContentView>

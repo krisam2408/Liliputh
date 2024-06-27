@@ -15,6 +15,9 @@ public sealed class MainViewModel : BaseViewModel
     private ObservableCollection<FileData> m_files;
     public ObservableCollection<FileData> Files { get => m_files; set => SetValue(ref m_files, value); }
 
+    private bool m_clearFilesVisibility;
+    public bool ClearFilesVisibility { get => m_clearFilesVisibility; set => SetValue(ref m_clearFilesVisibility, value); }
+
     private readonly KeyValuePair<MergeOptions, string>[] m_mergeOptions =
     [
         new(MergeOptions.DontMerge, "Don't Merge"),
@@ -53,18 +56,26 @@ public sealed class MainViewModel : BaseViewModel
     private string m_outputPathButtonText;
     public string OutputPathButtonText { get => m_outputPathButtonText; set => SetValue(ref m_outputPathButtonText, value); }
 
+    private bool m_outputPathClearVisibility;
+    public bool OutputPathClearVisibility { get => m_outputPathClearVisibility; set => SetValue(ref m_outputPathClearVisibility, value); }
+
     private const string m_outputFileButtonDefaultText = "Set Output File";
     private string m_outputFileButtonText;
     public string OutputFileButtonText { get => m_outputFileButtonText; set => SetValue(ref m_outputFileButtonText, value); }
 
-    private bool m_outputClearButtonVisibility;
-    public bool OutputClearButtonVisibility { get => m_outputClearButtonVisibility; set => SetValue(ref m_outputClearButtonVisibility, value); }
+    private bool m_outputFileClearVisibility;
+    public bool OutputFileClearVisibility { get => m_outputFileClearVisibility; set => SetValue(ref m_outputFileClearVisibility, value); }
+
+    private bool m_outputFileEntryVisibility;
+    public bool OutputFileEntryVisibility { get => m_outputFileEntryVisibility; set => SetValue(ref m_outputFileEntryVisibility, value); }
 
     public ICommand SelectFilesCommand { get; private set; }
     public ICommand ClearFilesCommand { get; private set; }
     public ICommand SetOutputPathCommand { get; private set; }
+    public ICommand ClearOutputPathCommand { get; private set; }
     public ICommand SetOutputFileCommand { get; private set; }
-    public ICommand ClearOutputCommand { get; private set; }
+    public ICommand ClearOutputFileCommand { get; private set; }
+    public ICommand AcceptFilenameCommand { get; private set; }
     public ICommand ApplyCommand { get; private set; }
     
     public MainViewModel()
@@ -73,16 +84,24 @@ public sealed class MainViewModel : BaseViewModel
 
         m_files = new();
 
+        m_clearFilesVisibility = false;
+
         MergeOptionIndex = 0;
         m_outputPathButtonText = m_outputPathButtonDefaultText;
         m_outputFileButtonText = m_outputFileButtonDefaultText;
 
+        m_outputPathClearVisibility = false;
+        m_outputFileClearVisibility = false;
+        m_outputFileEntryVisibility = false;
+
         SelectFilesCommand = new Command(async () => await SelectFiles());
-        ClearFilesCommand = new Command(() => ClearFiles());
+        ClearFilesCommand = new Command(ClearFiles);
         SetOutputPathCommand = new Command(async () => await SetOutputPath());
-        SetOutputFileCommand = new Command(() => SetOutputFile());
-        ClearOutputCommand = new Command(() => ClearOutput());
-        ApplyCommand = new Command(() => Apply());
+        ClearOutputPathCommand = new Command(ClearOutputPath);
+        SetOutputFileCommand = new Command(SetOutputFile);
+        ClearOutputFileCommand = new Command(ClearOutputFile);
+        AcceptFilenameCommand = new Command((p) => AcceptFilename((string)p));
+        ApplyCommand = new Command(Apply);
     }
 
     public async Task SelectFiles()
@@ -102,11 +121,15 @@ public sealed class MainViewModel : BaseViewModel
             if(isValid && notDuplicate)
                 Files.Add(item);
         }
+
+        if(Files.Count > 0)
+            ClearFilesVisibility = true;
     }
 
     public void ClearFiles()
     {
         Files.Clear();
+        ClearFilesVisibility = false;
     }
 
     public async Task SetOutputPath()
@@ -124,23 +147,37 @@ public sealed class MainViewModel : BaseViewModel
 
         OutputPathButtonText = folder.Folder.Name;
 
-        OutputClearButtonVisibility = true;
-    } 
+        OutputPathClearVisibility = true;
+    }
+
+    public void ClearOutputPath()
+    {
+        m_outputPath = null;
+        OutputPathButtonText = m_outputPathButtonDefaultText;
+        OutputPathClearVisibility = false;
+    }
 
     public void SetOutputFile()
     {
-
+        OutputFileEntryVisibility = true;
     }
 
-    public void ClearOutput()
+    public void AcceptFilename(string filename)
     {
-        m_outputPath = null;
+        OutputFileEntryVisibility = false;
+        if(string.IsNullOrWhiteSpace(filename)) 
+            return;
+
+        m_outputFilename = filename;
+        OutputFileButtonText = filename;
+        OutputFileClearVisibility = true;
+    }
+
+    public void ClearOutputFile()
+    {
         m_outputFilename = null;
-
-        OutputPathButtonText = m_outputPathButtonDefaultText;
         OutputFileButtonText = m_outputFileButtonDefaultText;
-
-        OutputClearButtonVisibility = false;
+        OutputFileClearVisibility = false;
     }
 
     public void Apply()
