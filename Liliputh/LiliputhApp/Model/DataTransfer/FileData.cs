@@ -1,6 +1,6 @@
 ﻿namespace LiliputhApp.Model.DataTransfer;
 
-public struct FileData
+public sealed class FileData
 {
     private readonly AcceptedExtensions[] m_okExtensions =
     [
@@ -8,6 +8,7 @@ public struct FileData
         AcceptedExtensions.JSON,
         AcceptedExtensions.JS,
         AcceptedExtensions.CSS,
+        AcceptedExtensions.HTML,
     ];
 
     public string Filename { get; set; }

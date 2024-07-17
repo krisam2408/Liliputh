@@ -17,3 +17,10 @@ public enum MergeOptions
     SimpleMerge,
     TemplateMerge
 }
+
+public enum CommandPossibilities
+{
+    Minify,
+    SimpleMerge,
+    TemplateMerge
+}
