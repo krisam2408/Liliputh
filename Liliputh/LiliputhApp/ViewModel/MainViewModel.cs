@@ -94,16 +94,16 @@ public sealed class MainViewModel : BaseViewModel
     public bool TemplateClearVisibility { get => m_templateClearVisibility; set => SetValue(ref m_templateClearVisibility, value); }
 
     private FileData? m_template;
+    private bool IsTemplateSet => m_template is not null;
 
-    private string m_defaultRegion = "--------";
-
-    private ObservableCollection<string> m_templateRegions;
-    public ObservableCollection<string> TemplateRegions { get => m_templateRegions; set => SetValue(ref m_templateRegions, value); }
+    private ObservableCollection<TemplateRegion> m_templateRegions;
+    public ObservableCollection<TemplateRegion> TemplateRegions { get => m_templateRegions; set => SetValue(ref m_templateRegions, value); }
 
     #endregion
 
     private bool m_minify;
     public bool MinifyOption { get => m_minify; set => SetValue(ref m_minify, value); }
+
     #endregion
 
     #region Output Directory
@@ -143,10 +143,7 @@ public sealed class MainViewModel : BaseViewModel
 
         m_files = new();
         m_messages = new();
-        m_templateRegions = new()
-        {
-            m_defaultRegion
-        };
+        m_templateRegions = new();
 
         #region Visibilities
         m_activityIndicatorVisibility = false;
@@ -214,6 +211,7 @@ public sealed class MainViewModel : BaseViewModel
         MergeOptionIndex = 0;
     }
 
+    #region Select Files
     private async Task SelectFiles()
     {
         IEnumerable<FileResult> files = await FilePicker
@@ -229,7 +227,7 @@ public sealed class MainViewModel : BaseViewModel
             bool notDuplicate = !Files.ContainsKey(item);
 
             if(isValid && notDuplicate)
-                Files.Add(item, m_defaultRegion);
+                Files.Add(new FileDataItem(item));
         }
 
         if(Files.Count > 0)
@@ -245,6 +243,9 @@ public sealed class MainViewModel : BaseViewModel
         ClearFilesVisibility = false;
     }
 
+    #endregion
+
+    #region Select Template
     private async Task SelectTemplate()
     {
         FileResult? templateResult = await FilePicker
@@ -263,6 +264,13 @@ public sealed class MainViewModel : BaseViewModel
         TemplateButtonText = template.Filename;
         TemplateClearVisibility = true;
 
+        List<TemplateRegion> regions = await template.CheckTemplateRegions();
+
+        foreach (TemplateRegion region in regions)
+        {
+            TemplateRegions.Add(region);
+        }
+
         RefreshFileDataItems();
     }
 
@@ -270,7 +278,9 @@ public sealed class MainViewModel : BaseViewModel
     {
         foreach (FileDataItem item in Files)
         {
-            item.RegionVisibility = TemplateClearVisibility;
+            item.Model.RegionVisibility = TemplateClearVisibility;
+
+            item.Model.CheckRegions(TemplateRegions);
         }
     }
 
@@ -279,10 +289,14 @@ public sealed class MainViewModel : BaseViewModel
         m_template = null;
         TemplateButtonText = m_templateButtonDefaultText;
         TemplateClearVisibility = false;
+        TemplateRegions.Clear();
 
         RefreshFileDataItems();
     }
 
+    #endregion
+
+    #region Set Output
     private async Task SetOutputPath()
     {
         FolderPickerResult folder = await FolderPicker
@@ -331,6 +345,14 @@ public sealed class MainViewModel : BaseViewModel
         OutputFileClearVisibility = false;
     }
 
+    #endregion
+
+    private void AddMessage(string message)
+    {
+        Messages.Add($"- {message}.");
+    }
+
+    #region Apply
     private async Task Apply()
     {
         Messages.Clear();
@@ -348,16 +370,16 @@ public sealed class MainViewModel : BaseViewModel
 
         foreach(CommandTransfer command in commands)
         {
-            if(command.Command == CommandPossibilities.SimpleMerge)
-                mergeBuilder.Add(await SimpleMerge());
+            if(command.IsSimpleMerge)
+                mergeBuilder.Add(await SimpleMerge(command.Extension));
 
-            if(command.Command == CommandPossibilities.TemplateMerge)
-                mergeBuilder.Add(await TemplateMerge());
+            if(command.IsTemplateMerge)
+                mergeBuilder.Add(await TemplateMerge(command.Extension));
 
-            if(command.Command == CommandPossibilities.Minify && command.IsOnly)
+            if(command.IsMinify && command.IsOnly)
                 mergeBuilder.AddRange(await MultipleMinify());
 
-            if (command.Command == CommandPossibilities.Minify && !command.IsOnly)
+            if (command.IsMinify && !command.IsOnly)
                 mergeBuilder[0] = SingleMinify(mergeBuilder[0]);
         }
 
@@ -390,11 +412,6 @@ public sealed class MainViewModel : BaseViewModel
         await CreateFiles(mergeBuilder);
     }
 
-    private void AddMessage(string message)
-    {
-        Messages.Add($"- {message}.");
-    }
-
     private List<CommandTransfer> CheckCommands()
     {
         List<CommandTransfer> result = new();
@@ -402,13 +419,7 @@ public sealed class MainViewModel : BaseViewModel
         if(Files.Count == 0)
             AddMessage("No files selected");
 
-        List<AcceptedExtensions> extCount = new();
-
-        foreach (FileDataItem file in Files)
-        {
-            if(!extCount.Contains(file.File.Extension))
-                extCount.Add(file.File.Extension);
-        }
+        bool singleExtension = Files.HasSingleExtension(out FileExtensions extension);
         
         if(string.IsNullOrWhiteSpace(m_outputPath))
             AddMessage("Output directory not set");
@@ -416,29 +427,33 @@ public sealed class MainViewModel : BaseViewModel
         if(MergeOptionIndex > 0 && string.IsNullOrWhiteSpace(m_outputFilename))
             AddMessage("Output file not set");
 
-        if(MergeOptionIndex > 0 && extCount.Count > 1)
+        if(MergeOptionIndex > 0 && !singleExtension)
             AddMessage("All files to be merged need to be from the same type");
 
         if(MergeOptionIndex == 1)
-            result.Add(CommandTransfer.SimpleMerge);
+            result.Add(CommandTransfer.SimpleMerge(extension));
 
         if(MergeOptionIndex == 2)
-            AddMessage("Template Merge not implemmented yet");
+        {
+            if (m_template is null)
+                AddMessage("Template is not set");
+            result.Add(CommandTransfer.TemplateMerge(extension));
+        }
 
         if (MinifyOption)
-            result.Add(CommandTransfer.Minify);
+            result.Add(CommandTransfer.Minify(extension));
 
         if(result.Count == 1)
         {
             CommandTransfer onlyCommand = result[0];
-            if (onlyCommand.Equals(CommandTransfer.Minify))
-                result[0] = CommandTransfer.JustMinify;
+            if (onlyCommand == CommandPossibilities.Minify)
+                result[0] = CommandTransfer.JustMinify();
 
-            if (onlyCommand.Equals(CommandTransfer.SimpleMerge))
-                result[0] = CommandTransfer.JustSimpleMerge;
+            if (onlyCommand == CommandPossibilities.SimpleMerge)
+                result[0] = CommandTransfer.JustSimpleMerge(extension);
 
-            if (onlyCommand.Equals(CommandTransfer.TemplateMerge))
-                result[0] = CommandTransfer.JustTemplateMerge;
+            if (onlyCommand == CommandPossibilities.TemplateMerge)
+                result[0] = CommandTransfer.JustTemplateMerge(extension);
         }
 
         if (result.Count > 0)
@@ -448,7 +463,7 @@ public sealed class MainViewModel : BaseViewModel
         return result;
     }
 
-    private async Task<OutputFileTransfer> SimpleMerge()
+    private async Task<OutputFileTransfer> SimpleMerge(FileExtensions extension)
     {
         if (string.IsNullOrWhiteSpace(m_outputPath) || string.IsNullOrWhiteSpace(m_outputFilename))
         {
@@ -471,14 +486,109 @@ public sealed class MainViewModel : BaseViewModel
 
         string path = Path.Combine(m_outputPath, m_outputFilename);
 
-        OutputFileTransfer result = new(lines, path);
+        OutputFileTransfer result = new(lines, path, extension);
 
         return result;
     }
 
-    private async Task<OutputFileTransfer> TemplateMerge()
+    private async Task<OutputFileTransfer> TemplateMerge(FileExtensions extension)
     {
-        return OutputFileTransfer.FailedFile;
+        if (string.IsNullOrWhiteSpace(m_outputPath) || string.IsNullOrWhiteSpace(m_outputFilename))
+        {
+            AddMessage("Error at template merge");
+            return OutputFileTransfer.FailedFile;
+        }
+
+        if (m_template is null)
+        {
+            AddMessage("Template is not set");
+            return OutputFileTransfer.FailedFile;
+        }
+
+        if (Files.Count != TemplateRegions.Count)
+        {
+            AddMessage("Number of files doesn't match with number of regions");
+            return OutputFileTransfer.FailedFile;
+        }
+
+        int regionErrors = 0;
+        foreach (FileDataItem file in Files)
+        {
+            if(file.Model.SelectedRegion == 0)
+            {
+                AddMessage($"File {file.File.Filename} doesn't have a region set");
+                regionErrors++;
+            }
+        }
+
+        if(regionErrors > 0)
+            return OutputFileTransfer.FailedFile;
+
+        List<string> lines = new();
+
+        string[] templateLines = await File.ReadAllLinesAsync(m_template.Url);
+
+        foreach (string line in templateLines)
+        {
+            if(TryGetRegion(line, out Dictionary<TemplateRegion, FileData> regions))
+            {
+                foreach (KeyValuePair<TemplateRegion, FileData> kvp in regions)
+                {
+                    string trimmedLine = line
+                        .Replace(kvp.Key.FullString, "")
+                        .Trim();
+
+                    if(!string.IsNullOrWhiteSpace(trimmedLine))
+                        lines.Add(trimmedLine);
+
+                    string[] fileLines = await File.ReadAllLinesAsync(kvp.Value.Url);
+                    foreach (string fileLine in fileLines)
+                    {
+                        lines.Add(fileLine);
+                    }
+                }
+
+                continue;
+            }
+
+            lines.Add(line);
+        }
+
+        string path = Path.Combine(m_outputPath, m_outputFilename);
+
+        OutputFileTransfer result = new(lines, path, extension);
+
+        return result;
+    }
+
+    private bool TryGetRegion(string line, out Dictionary<TemplateRegion, FileData> regions)
+    {
+        regions = new();
+
+        if (string.IsNullOrWhiteSpace(line))
+            return false;
+
+        if (m_template is null)
+            return false;
+
+        List<TemplateRegion> matches = m_template.MatchRegion(line);
+
+        foreach(TemplateRegion match in matches)
+        {
+            foreach(FileDataItem file in Files)
+            {
+                if(match.Name == file.Model.Regions[file.Model.SelectedRegion].Name)
+                {
+                    regions.Add(match, file.File);
+                    continue;
+                }
+            }
+        }
+
+        if (regions.Count > 0)
+            return true;
+
+        return false;
     }
 
     private OutputFileTransfer SingleMinify(OutputFileTransfer builder)
@@ -508,7 +618,7 @@ public sealed class MainViewModel : BaseViewModel
             minifyBuilder.Append(minLine);
         }
 
-        OutputFileTransfer result = new([minifyBuilder.ToString()], builder.OutputPath);
+        OutputFileTransfer result = new([minifyBuilder.ToString()], builder.OutputPath, builder.Extension);
 
         return result;
     }
@@ -528,4 +638,6 @@ public sealed class MainViewModel : BaseViewModel
                 await File.WriteAllLinesAsync(file.OutputPath, file.Lines);
         }
     }
+
+    #endregion
 }

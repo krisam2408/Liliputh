@@ -1,6 +1,6 @@
 ﻿namespace LiliputhApp.Model;
 
-public enum AcceptedExtensions
+public enum FileExtensions
 {
     NOTACCEPTED,
     NULL,
