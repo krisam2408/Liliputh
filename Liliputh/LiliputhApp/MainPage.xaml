@@ -21,60 +21,25 @@
                 </Grid.ColumnDefinitions>
 
                 <!--#region First Column Files List-->
-                <ListView
-                    Grid.Column="0"
-                    ItemsSource="{Binding Files}"
-                    SelectionMode="None"
-                    Margin="32, 8, 0, 0">
-                    <ListView.ItemTemplate>
-                        <DataTemplate>
-                            <ViewCell>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="6*"/>
-                                        <ColumnDefinition Width="4*"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="2*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Label 
-                                        Grid.Column="0"
-                                        VerticalOptions="CenterAndExpand"
-                                        VerticalTextAlignment="Center"
-                                        Text="{Binding Source={RelativeSource AncestorType={x:Type dt:FileDataItem}}, Path=File.Filename}"/>
-                                    <Picker 
-                                        Grid.Column="1"
-                                        ItemsSource="{Binding Source={RelativeSource AncestorType={x:Type dt:FileDataItem}}, Path=Model.Regions}"
-                                        SelectedIndex="{Binding Source={RelativeSource AncestorType={x:Type dt:FileDataItem}}, Path=Model.SelectedRegion}"
-                                        ItemDisplayBinding="{Binding Name}"
-                                        IsVisible="{Binding Source={RelativeSource AncestorType={x:Type dt:FileDataItem}}, Path=Model.RegionVisibility}"/>
-                                    <Label 
-                                        Grid.Column="3" 
-                                        VerticalOptions="CenterAndExpand"
-                                        VerticalTextAlignment="Center"
-                                        Text="{Binding Source={RelativeSource AncestorType={x:Type dt:FileDataItem}}, Path=File.Extension}"/>
-                                </Grid>
-                            </ViewCell>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
+                <ScrollView>
+                    <ListView
+                        Grid.Column="0"
+                        ItemsSource="{Binding Files}"
+                        SelectionMode="None"
+                        Margin="32, 8, 0, 0"
+                        SeparatorVisibility="Default"
+                        VerticalScrollBarVisibility="Always"
+                        ItemTemplate="{StaticResource FileDataItemTemplate}"/>
+                </ScrollView>
+                
                 <!--#endregion-->
 
                 <!--#region Second Column-->
-                <Grid
+                <VerticalStackLayout
                     Grid.Column="1">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="4*" />
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
 
                     <!--#region Files Picker-->
                     <c:SingleValueButton
-                        Grid.Row="0"
                         Text="Select Files"
                         SubmitCommand="{Binding SelectFilesCommand}"
                         CancelTooltip="Clear Files"
@@ -82,49 +47,64 @@
                         CancelVisibility="{Binding ClearFilesVisibility}"/>
                     <!--#endregion-->
 
-                    <!--#region Merge Options-->
+                    <!--#region Merge Type Picker-->
                     <Grid
-                        Grid.Row="1"
-                        Padding="0, 16">
+                        HorizontalOptions="FillAndExpand">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="2*"/>
                         </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
+                        <Label 
+                            Grid.Column="0" 
+                            Text="Merge Options" 
+                            VerticalTextAlignment="Center"/>
+                        <Picker 
+                            Grid.Column="1"
+                            Margin="0, 4" 
+                            ItemsSource="{Binding MergeOptionsList}" 
+                            SelectedIndex="{Binding MergeOptionIndex}" 
+                            ItemDisplayBinding="{Binding Value}"/>
+                    </Grid>
+                    <!--#endregion-->
 
-                        <!--#region Merge Type Picker-->
-                        <Label Grid.Column="0" Grid.Row="0" Text="Merge Options" VerticalTextAlignment="Center"/>
-                        <Picker Grid.Column="1" Grid.Row="0" Margin="0, 4" ItemsSource="{Binding MergeOptionsList}" SelectedIndex="{Binding MergeOptionIndex}" ItemDisplayBinding="{Binding Value}"/>
-                        <!--#endregion-->
+                    <!--#region Template Picker-->
+                    <c:SingleValueButton
+                        Grid.ColumnSpan="2"
+                        Text="{Binding TemplateButtonText}"
+                        SubmitCommand="{Binding ChooseTemplateCommand}"
+                        CancelTooltip="Clear Template"
+                        CancelCommand="{Binding ClearTemplateCommand}"
+                        CancelVisibility="{Binding TemplateClearVisibility}"
+                        IsVisible="{Binding TemplatePathVisible}"/>
+                    <!--#endregion-->
 
-                        <!--#region Template Picker-->
-                        <c:SingleValueButton
-                            Grid.Column="0"
-                            Grid.Row="1"
-                            Grid.ColumnSpan="2"
-                            Text="{Binding TemplateButtonText}"
-                            SubmitCommand="{Binding ChooseTemplateCommand}"
-                            CancelTooltip="Clear Template"
-                            CancelCommand="{Binding ClearTemplateCommand}"
-                            CancelVisibility="{Binding TemplateClearVisibility}"
-                            IsVisible="{Binding TemplatePathVisible}"/>
-                        <!--#endregion-->
-
-                        <!--#region Minify-->
+                    <!--#region Minify-->
+                    <Grid
+                        HorizontalOptions="FillAndExpand">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="2*"/>
+                        </Grid.ColumnDefinitions>
                         <Label Grid.Column="0" Grid.Row="2" Text="Minify" VerticalTextAlignment="Center"/>
                         <CheckBox Grid.Column="1" Grid.Row="2" Margin="0,4" IsChecked="{Binding MinifyOption}"/>
-                        <!--#endregion-->
-
                     </Grid>
+
+                    <c:SingleValueButton
+                        Text="{Binding MinSuffixButtonText}"
+                        SubmitCommand="{Binding SetMinSuffixCommand}"
+                        CancelTooltip="Clear Min Suffix"
+                        CancelCommand="{Binding ClearMinSuffixCommand}"
+                        CancelVisibility="{Binding MinSuffixClearVisibility}"
+                        IsVisible="{Binding MinifyOption}" />
+
+                    <c:EntryInput
+                        Placeholder="Set the min suffix..."
+                        AcceptCommand="{Binding AcceptMinSuffixCommand}"
+                        IsVisible="{Binding MinSuffixEntryVisibility}" />
                     <!--#endregion-->
 
                     <!--#region Directory Picker-->
                     <c:SingleValueButton
-                        Grid.Row="2"
                         Text="{Binding OutputPathButtonText}"
                         SubmitCommand="{Binding SetOutputPathCommand}"
                         CancelTooltip="Clear Output Path"
@@ -134,7 +114,6 @@
 
                     <!--#region Output File Picker-->
                     <c:SingleValueButton
-                        Grid.Row="3"
                         Text="{Binding OutputFileButtonText}"
                         SubmitCommand="{Binding SetOutputFileCommand}"
                         CancelTooltip="Clear Output File"
@@ -143,7 +122,6 @@
                         IsVisible="{Binding OutputFileFormVisibility}"/>
 
                     <c:EntryInput
-                        Grid.Row="4"
                         Placeholder="Set a file output..."
                         AcceptCommand="{Binding AcceptFilenameCommand}"
                         IsVisible="{Binding OutputFileEntryVisibility}"/>
@@ -157,23 +135,37 @@
 
                     <!--#region Messages-->
                     <Border
-                        Grid.Row="6"
-                        BackgroundColor="Red"
+                        BackgroundColor="{StaticResource Red}"
                         Padding="16"
                         Margin="0,4"
                         Stroke="Transparent"
-                        IsVisible="{Binding MessagesVisibility}">
+                        IsVisible="{Binding ErrorMessagesVisibility}">
                         <Border.StrokeShape>
                             <RoundRectangle
                                 CornerRadius="8"/>
                         </Border.StrokeShape>
                         <ListView
                             SelectionMode="None"
-                            ItemsSource="{Binding Messages}"/>
+                            ItemsSource="{Binding ErrorMessages}"/>
+                    </Border>
+
+                    <Border
+                        BackgroundColor="{StaticResource Lime}"
+                        Padding="16"
+                        Margin="0,4"
+                        Stroke="Transparent"
+                        IsVisible="{Binding SuccessMessagesVisibility}">
+                        <Border.StrokeShape>
+                            <RoundRectangle
+                                CornerRadius="8"/>
+                        </Border.StrokeShape>
+                        <ListView
+                            SelectionMode="None"
+                            ItemsSource="{Binding SuccessMessages}"/>
                     </Border>
                     <!--#endregion-->
 
-                </Grid>
+                </VerticalStackLayout>
                 <!--#endregion-->
                 
             </Grid>

@@ -19,7 +19,7 @@
         <ImageButton
             Grid.Column="1"
             Source="cross.png"
-            BackgroundColor="Firebrick"
+            BackgroundColor="{StaticResource Red}"
             Padding="4"
             Margin="4,0,0,0"
             CornerRadius="8"

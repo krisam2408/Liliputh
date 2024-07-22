@@ -27,11 +27,17 @@ public sealed class MainViewModel : BaseViewModel
     #endregion
 
     #region Messages
-    private ObservableCollection<string> m_messages;
-    public ObservableCollection<string> Messages { get => m_messages; set => SetValue(ref m_messages, value); }
+    private ObservableCollection<string> m_errorMessages;
+    public ObservableCollection<string> ErrorMessages { get => m_errorMessages; set => SetValue(ref m_errorMessages, value); }
 
-    private bool m_messagesVisibility;
-    public bool MessagesVisibility { get => m_messagesVisibility; set => SetValue(ref m_messagesVisibility, value); }
+    private bool m_errorMessagesVisibility;
+    public bool ErrorMessagesVisibility { get => m_errorMessagesVisibility; set => SetValue(ref m_errorMessagesVisibility, value); }
+
+    private ObservableCollection<string> m_successMessages;
+    public ObservableCollection<string> SuccessMessages { get => m_successMessages; set => SetValue(ref m_successMessages, value); }
+
+    private bool m_successMessagesVisibility;
+    public bool SuccessMessagesVisibility { get => m_successMessagesVisibility; set => SetValue(ref m_successMessagesVisibility, value); }
     #endregion
 
     #region Files Interface
@@ -42,7 +48,7 @@ public sealed class MainViewModel : BaseViewModel
     public bool ClearFilesVisibility { get => m_clearFilesVisibility; set => SetValue(ref m_clearFilesVisibility, value); }
     #endregion
 
-    #region Apply Options
+    #region Merge Options
     private readonly KeyValuePair<MergeOptions, string>[] m_mergeOptions =
     [
         new(MergeOptions.DontMerge, "Don't Merge"),
@@ -79,6 +85,8 @@ public sealed class MainViewModel : BaseViewModel
         }
     }
 
+    #endregion
+
     #region Template
     private bool m_templatePathVisible;
     public bool TemplatePathVisible { get => m_templatePathVisible; set => SetValue(ref m_templatePathVisible, value); }
@@ -101,9 +109,25 @@ public sealed class MainViewModel : BaseViewModel
 
     #endregion
 
+    #region Minify
     private bool m_minify;
     public bool MinifyOption { get => m_minify; set => SetValue(ref m_minify, value); }
 
+    public ICommand SetMinSuffixCommand { get; private set; }
+    public ICommand ClearMinSuffixCommand { get; private set; }
+    public ICommand AcceptMinSuffixCommand { get; private set; }
+
+    private string? m_minSuffix;
+
+    private const string m_minSuffixButtonDefaultText = "Set Min Suffix";
+    private string m_minSuffixButtonText;
+    public string MinSuffixButtonText { get => m_minSuffixButtonText; set => SetValue(ref m_minSuffixButtonText, value); }
+
+    private bool m_minSuffixClearVisibility;
+    public bool MinSuffixClearVisibility { get => m_minSuffixClearVisibility; set => SetValue(ref m_minSuffixClearVisibility, value); }
+
+    private bool m_minSuffixEntryVisibility;
+    public bool MinSuffixEntryVisibility { get => m_minSuffixEntryVisibility; set => SetValue(ref m_minSuffixEntryVisibility, value); }
     #endregion
 
     #region Output Directory
@@ -142,21 +166,27 @@ public sealed class MainViewModel : BaseViewModel
         m_title = "Liliputh";
 
         m_files = new();
-        m_messages = new();
+        m_errorMessages = new();
+        m_successMessages = new();
         m_templateRegions = new();
 
         #region Visibilities
+        m_minify = false;
         m_activityIndicatorVisibility = false;
-        m_messagesVisibility = false;
+        m_errorMessagesVisibility = false;
+        m_successMessagesVisibility = false;
         m_clearFilesVisibility = false;
         m_templatePathVisible = false;
         m_templateClearVisibility = false;
+        m_minSuffixClearVisibility = false;
+        m_minSuffixEntryVisibility = false;
         m_outputPathClearVisibility = false;
         m_outputFileFormVisibility = false;
         m_outputFileClearVisibility = false;
         m_outputFileEntryVisibility = false;
 
         m_templateButtonText = m_templateButtonDefaultText;
+        m_minSuffixButtonText = m_minSuffixButtonDefaultText;
         m_outputPathButtonText = m_outputPathButtonDefaultText;
         m_outputFileButtonText = m_outputFileButtonDefaultText;
         #endregion
@@ -180,6 +210,12 @@ public sealed class MainViewModel : BaseViewModel
 
         ClearTemplateCommand = new Command(ClearTemplate);
 
+        SetMinSuffixCommand = new Command(SetMinSuffix);
+
+        ClearMinSuffixCommand = new Command(ClearMinSuffix);
+
+        AcceptMinSuffixCommand = new Command((p) => AcceptMinSuffix((string)p));
+
         SetOutputPathCommand = new Command(async () =>
         {
             ActivityIndicatorVisibility = false;
@@ -193,12 +229,7 @@ public sealed class MainViewModel : BaseViewModel
 
         ClearOutputFileCommand = new Command(ClearOutputFile);
 
-        AcceptFilenameCommand = new Command((p) =>
-        {
-            ActivityIndicatorVisibility = false;
-            AcceptFilename((string)p);
-            ActivityIndicatorVisibility = true;
-        });
+        AcceptFilenameCommand = new Command((p) => AcceptFilename((string)p));
 
         ApplyCommand = new Command(async () =>
         {
@@ -209,6 +240,15 @@ public sealed class MainViewModel : BaseViewModel
         #endregion
 
         MergeOptionIndex = 0;
+    }
+
+    public void RemoveFile(Guid fileId)
+    {
+        if (Files.Remove(fileId))
+        {
+            if (Files.Count == 0)
+                ClearFilesVisibility = false;
+        }
     }
 
     #region Select Files
@@ -296,6 +336,32 @@ public sealed class MainViewModel : BaseViewModel
 
     #endregion
 
+    #region Minify
+    private void SetMinSuffix()
+    {
+        MinSuffixEntryVisibility = true;
+    }
+
+    private void AcceptMinSuffix(string suffix)
+    {
+        MinSuffixEntryVisibility = false;
+        if (string.IsNullOrWhiteSpace(suffix))
+            return;
+
+        m_minSuffix = suffix;
+        MinSuffixButtonText = suffix;
+        MinSuffixClearVisibility = true;
+    }
+
+    private void ClearMinSuffix()
+    {
+        m_minSuffix = null;
+        MinSuffixButtonText = m_minSuffixButtonDefaultText;
+        MinSuffixClearVisibility = false;
+    }
+
+    #endregion
+
     #region Set Output
     private async Task SetOutputPath()
     {
@@ -347,22 +413,30 @@ public sealed class MainViewModel : BaseViewModel
 
     #endregion
 
-    private void AddMessage(string message)
+    private void AddErrorMessage(string message)
     {
-        Messages.Add($"- {message}.");
+        ErrorMessages.Add($"- {message}.");
+        ErrorMessagesVisibility = true;
+    }
+
+    private void AddSuccessMessage(string message)
+    {
+        SuccessMessages.Add($"- {message}.");
+        SuccessMessagesVisibility = true;
     }
 
     #region Apply
     private async Task Apply()
     {
-        Messages.Clear();
-        MessagesVisibility = false;
+        ErrorMessages.Clear();
+        SuccessMessages.Clear();
+        ErrorMessagesVisibility = false;
+        SuccessMessagesVisibility = false;
 
         List<CommandTransfer> commands = CheckCommands();
 
-        if (Messages.Count > 0)
+        if (ErrorMessages.Count > 0)
         {
-            MessagesVisibility = true;
             return;
         }
 
@@ -385,12 +459,12 @@ public sealed class MainViewModel : BaseViewModel
 
         if(mergeBuilder.Count == 0)
         {
-            AddMessage("Error at commands");
+            AddErrorMessage("Error at commands");
             foreach (CommandTransfer command in commands)
             {
-                AddMessage($"{command.Command}");
+                AddErrorMessage($"{command.Command}");
             }
-            MessagesVisibility = true;
+            ErrorMessagesVisibility = true;
             return;
         }
 
@@ -402,14 +476,32 @@ public sealed class MainViewModel : BaseViewModel
                 errorCount++;
             }
 
-            if(errorCount > 0)
+            if(errorCount == 1)
             {
-                AddMessage($"{errorCount} error at output");
+                AddErrorMessage("Error file creation");
+                return;
+            }
+            
+            if(errorCount > 1)
+            {
+                AddErrorMessage($"{errorCount} errors at file creation");
                 return;
             }
         }
 
         await CreateFiles(mergeBuilder);
+
+        if(mergeBuilder.Count == 1)
+        {
+            AddSuccessMessage($"{mergeBuilder[0].Filename} file created");
+            return;
+        }
+
+        if(mergeBuilder.Count > 1)
+        {
+            AddSuccessMessage($"{mergeBuilder.Count} files created");
+            return;
+        }
     }
 
     private List<CommandTransfer> CheckCommands()
@@ -417,18 +509,18 @@ public sealed class MainViewModel : BaseViewModel
         List<CommandTransfer> result = new();
 
         if(Files.Count == 0)
-            AddMessage("No files selected");
+            AddErrorMessage("No files selected");
 
         bool singleExtension = Files.HasSingleExtension(out FileExtensions extension);
         
         if(string.IsNullOrWhiteSpace(m_outputPath))
-            AddMessage("Output directory not set");
+            AddErrorMessage("Output directory not set");
 
         if(MergeOptionIndex > 0 && string.IsNullOrWhiteSpace(m_outputFilename))
-            AddMessage("Output file not set");
+            AddErrorMessage("Output file not set");
 
         if(MergeOptionIndex > 0 && !singleExtension)
-            AddMessage("All files to be merged need to be from the same type");
+            AddErrorMessage("All files to be merged need to be from the same type");
 
         if(MergeOptionIndex == 1)
             result.Add(CommandTransfer.SimpleMerge(extension));
@@ -436,7 +528,7 @@ public sealed class MainViewModel : BaseViewModel
         if(MergeOptionIndex == 2)
         {
             if (m_template is null)
-                AddMessage("Template is not set");
+                AddErrorMessage("Template is not set");
             result.Add(CommandTransfer.TemplateMerge(extension));
         }
 
@@ -459,15 +551,21 @@ public sealed class MainViewModel : BaseViewModel
         if (result.Count > 0)
             return result;
 
-        AddMessage("Nothing to apply");
+        AddErrorMessage("Nothing to apply");
         return result;
     }
 
     private async Task<OutputFileTransfer> SimpleMerge(FileExtensions extension)
     {
-        if (string.IsNullOrWhiteSpace(m_outputPath) || string.IsNullOrWhiteSpace(m_outputFilename))
+        if (string.IsNullOrWhiteSpace(m_outputPath))
         {
-            AddMessage("Error at simple merge");
+            AddErrorMessage("Output directory not set");
+            return OutputFileTransfer.FailedFile;
+        }
+
+        if (string.IsNullOrWhiteSpace(m_outputFilename))
+        {
+            AddErrorMessage("Output filename not set");
             return OutputFileTransfer.FailedFile;
         }
 
@@ -484,30 +582,34 @@ public sealed class MainViewModel : BaseViewModel
             lines.Add("\n");
         }
 
-        string path = Path.Combine(m_outputPath, m_outputFilename);
-
-        OutputFileTransfer result = new(lines, path, extension);
+        OutputFileTransfer result = new(lines, m_outputPath, m_outputFilename, extension);
 
         return result;
     }
 
     private async Task<OutputFileTransfer> TemplateMerge(FileExtensions extension)
     {
-        if (string.IsNullOrWhiteSpace(m_outputPath) || string.IsNullOrWhiteSpace(m_outputFilename))
+        if (string.IsNullOrWhiteSpace(m_outputPath))
         {
-            AddMessage("Error at template merge");
+            AddErrorMessage("Output directory not set");
+            return OutputFileTransfer.FailedFile;
+        }
+
+        if (string.IsNullOrWhiteSpace(m_outputFilename))
+        {
+            AddErrorMessage("Output filename not set");
             return OutputFileTransfer.FailedFile;
         }
 
         if (m_template is null)
         {
-            AddMessage("Template is not set");
+            AddErrorMessage("Template is not set");
             return OutputFileTransfer.FailedFile;
         }
 
         if (Files.Count != TemplateRegions.Count)
         {
-            AddMessage("Number of files doesn't match with number of regions");
+            AddErrorMessage("Number of files doesn't match with number of regions");
             return OutputFileTransfer.FailedFile;
         }
 
@@ -516,7 +618,7 @@ public sealed class MainViewModel : BaseViewModel
         {
             if(file.Model.SelectedRegion == 0)
             {
-                AddMessage($"File {file.File.Filename} doesn't have a region set");
+                AddErrorMessage($"File {file.File.Filename} doesn't have a region set");
                 regionErrors++;
             }
         }
@@ -554,9 +656,7 @@ public sealed class MainViewModel : BaseViewModel
             lines.Add(line);
         }
 
-        string path = Path.Combine(m_outputPath, m_outputFilename);
-
-        OutputFileTransfer result = new(lines, path, extension);
+        OutputFileTransfer result = new(lines, m_outputPath, m_outputFilename, extension);
 
         return result;
     }
@@ -595,37 +695,149 @@ public sealed class MainViewModel : BaseViewModel
     {
         if (builder.Error)
         {
-            AddMessage("Error at single minifiy");
+            AddErrorMessage("Error at single minify");
+            return OutputFileTransfer.FailedFile;
+        }
+
+        if(string.IsNullOrWhiteSpace(m_minSuffix))
+        {
+            AddErrorMessage("Min suffix not set");
             return OutputFileTransfer.FailedFile;
         }
 
         StringBuilder minifyBuilder = new();
 
+        int index = 0;
         foreach (string line in builder.Lines)
         {
-            string minLine = line
-                .Replace("\n", " ")
-                .Replace("\t", " ")
-                .Replace("  ", " ");
+            string minLine = line;
 
-            int i = 0;
-            while(minLine.Contains("  ") || i < 8)
+            if (string.IsNullOrWhiteSpace(minLine))
             {
-                minLine = minLine.Replace("  ", " ");
-                i++;
+                index++;
+                continue;
             }
 
+            if(builder.Extension == FileExtensions.JS)
+                JSMinify(ref minLine, builder.Lines, index);
+
+            RegularMinify(ref minLine);
+
             minifyBuilder.Append(minLine);
+            index++;
         }
 
-        OutputFileTransfer result = new([minifyBuilder.ToString()], builder.OutputPath, builder.Extension);
+        string[] filenameParts = builder
+            .Filename
+            .Split('.');
+
+        StringBuilder filenameBuilder = new();
+        int partsLen = filenameParts.Length;
+
+        for(int i = 0; i < partsLen - 1; i++)
+        {
+            filenameBuilder.Append(filenameParts[i]);
+        }
+
+        filenameBuilder.Append(m_minSuffix);
+        filenameBuilder.Append($".{filenameParts[partsLen - 1]}");
+
+        OutputFileTransfer result = new([minifyBuilder.ToString()], builder.Directory, filenameBuilder.ToString(), builder.Extension);
 
         return result;
+    }
+
+    private static void JSMinify(ref string line, string[] allLines, int index)
+    {
+        if(string.IsNullOrWhiteSpace(line))
+            return;
+
+        char[] scopeEndingChars =
+        [
+            '}',
+            ']'
+        ];
+
+        line = line
+            .Replace("} ", "};")
+            .Replace("}\n", "};");
+
+        int linesLen = allLines.Length;
+
+        if (line.Last() == '}')
+        {
+            bool scopeEnding = false;
+            for (int i = 1; i <= 3; i++)
+            {
+                if (linesLen >= index + i)
+                {
+                    string refLine = allLines[index + i].Trim();
+
+                    if (string.IsNullOrWhiteSpace(refLine))
+                        continue;
+
+                    if (scopeEndingChars.Contains(refLine[0]))
+                    {
+                        scopeEnding = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!scopeEnding)
+            {
+                line = line
+                    .Replace("}", "};");
+            }
+        }
+    }
+
+    private static void RegularMinify(ref string line)
+    {
+        line = line
+            .Replace("\n", " ")
+            .Replace("\t", " ")
+            .Replace("  ", " ");
+
+        int loopCount = 0;
+        while (line.Contains("  ") || loopCount < 8)
+        {
+            line = line.Replace("  ", " ");
+            loopCount++;
+        }
     }
 
     private async Task<List<OutputFileTransfer>> MultipleMinify()
     {
         List<OutputFileTransfer> result = new();
+
+        if (string.IsNullOrWhiteSpace(m_outputPath))
+        {
+            AddErrorMessage("Output directory not set");
+            return result;
+        }
+
+        if (string.IsNullOrWhiteSpace(m_minSuffix))
+        {
+            AddErrorMessage("Min suffix not set");
+            return result;
+        }
+
+        List<OutputFileTransfer> previewTransfers = new();
+        foreach (FileDataItem file in Files)
+        {
+            string[] fileLines = await File.ReadAllLinesAsync(file.File.Url);
+            OutputFileTransfer output = new(fileLines, m_outputPath, file.File.Filename, file.File.Extension);
+            if(!output.Error)
+                previewTransfers.Add(output);
+        }
+
+        foreach(OutputFileTransfer output in previewTransfers)
+        {
+            OutputFileTransfer minResult = SingleMinify(output);
+            if (!minResult.Error)
+                result.Add(minResult);
+        }
 
         return result;
     }

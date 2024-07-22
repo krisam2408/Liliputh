@@ -1,5 +1,4 @@
-﻿using Microsoft.Maui.Controls.Shapes;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 namespace LiliputhApp.Model.DataTransfer;
 
@@ -8,7 +7,6 @@ public sealed class FileData
     private readonly FileExtensions[] m_accepted =
     [
         FileExtensions.TXT,
-        FileExtensions.JSON,
         FileExtensions.JS,
         FileExtensions.CSS,
         FileExtensions.HTML,
@@ -27,6 +25,7 @@ public sealed class FileData
     private const string m_xmlRegionPattern = @"<!--([ ]?){{([ ]?)([aA-zZ0-9]+)([ ]?)}}([ ]?)-->";
     private const string m_programmingRegionPattern = @"//([ ]?){{([ ]?)([aA-zZ0-9]+)([ ]?)}}";
 
+    public Guid Id { get; private set; }
     public string Filename { get; set; }
     public string Url { get; set; }
     public FileExtensions Extension { get; set; }
@@ -34,6 +33,7 @@ public sealed class FileData
 
     public FileData()
     {
+        Id = Guid.Empty;
         Filename = "";
         Url = "";
         Extension = FileExtensions.NOTACCEPTED;
@@ -41,6 +41,7 @@ public sealed class FileData
 
     public FileData(FileResult file)
     {
+        Id = Guid.NewGuid();
         Filename = file.FileName;
         Url = file.FullPath;
 
@@ -117,7 +118,7 @@ public sealed class FileData
         return result;
     }
 
-    private List<TemplateRegion> GetXMLRegions(params string[] lines)
+    private static List<TemplateRegion> GetXMLRegions(params string[] lines)
     {
         List<TemplateRegion> result = new();
 
@@ -144,7 +145,7 @@ public sealed class FileData
         return result;
     }
 
-    private List<TemplateRegion> GetProgrammingRegions(params string[] lines)
+    private static List<TemplateRegion> GetProgrammingRegions(params string[] lines)
     {
         List<TemplateRegion> result = new();
 

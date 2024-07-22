@@ -1,6 +1,7 @@
 ﻿using MVVMCore;
 using System.Collections;
 using System.Collections.ObjectModel;
+using System.Windows.Input;
 
 namespace LiliputhApp.Model.DataTransfer;
 
@@ -58,6 +59,17 @@ public sealed class FileDataDictionary : ObservableDictionary<FileData, FileData
         }
     }
 
+    public bool Remove(Guid fileId)
+    {
+        foreach(KeyValuePair<FileData, FileDataViewModel> kvp in Collection)
+        {
+            if(kvp.Key.Id == fileId)
+                return Remove(kvp.Key);
+        }
+
+        return false;
+    }
+
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator(); 
@@ -72,25 +84,29 @@ public sealed class FileDataItem : ObservableModel
     private FileDataViewModel m_model;
     public FileDataViewModel Model { get => m_model; set => SetValue(ref m_model, value); }
 
+    public ICommand RemoveItemCommand { get; private set; }
+
     public FileDataItem(FileData file)
     {
         m_file = file;
         m_model = new();
+
+        RemoveItemCommand = new Command(RemoveThisItem);
     }
 
-    public FileDataItem(FileData file, FileDataViewModel model)
+    public FileDataItem(FileData file, FileDataViewModel model) : this(file)
     {
-        m_file = file;
         m_model = model;
     }
 
-    public FileDataItem(KeyValuePair<FileData, FileDataViewModel> item)
-    {
-        m_file = item.Key;
-        m_model = item.Value;
-    }
+    public FileDataItem(KeyValuePair<FileData, FileDataViewModel> item) : this(item.Key, item.Value) { }
 
     public KeyValuePair<FileData, FileDataViewModel> ToKeyValuePair() => new(File, Model);
+
+    private void RemoveThisItem()
+    {
+        Terminal.Instance?.Main?.RemoveFile(File.Id);
+    }
 }
 
 public sealed class FileDataViewModel : ObservableModel

@@ -1,0 +1,55 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+            xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+            xmlns:dt="clr-namespace:LiliputhApp.Model.DataTransfer"
+            x:Class="LiliputhApp.Resources.Styles.DataTemplates">
+
+    <DataTemplate x:Key="FileDataItemTemplate">
+        <ViewCell>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="6*"/>
+                    <ColumnDefinition Width="4*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="72" />
+                </Grid.RowDefinitions>
+                
+                <Label 
+                    Grid.Column="0"
+                    VerticalOptions="CenterAndExpand"
+                    VerticalTextAlignment="Center"
+                    Text="{Binding Source={RelativeSource AncestorType={x:Type dt:FileDataItem}}, Path=File.Filename}"/>
+                
+                <Picker 
+                    Grid.Column="1"
+                    Margin="0, 8"
+                    ItemsSource="{Binding Source={RelativeSource AncestorType={x:Type dt:FileDataItem}}, Path=Model.Regions}"
+                    SelectedIndex="{Binding Source={RelativeSource AncestorType={x:Type dt:FileDataItem}}, Path=Model.SelectedRegion}"
+                    ItemDisplayBinding="{Binding Name}"
+                    IsVisible="{Binding Source={RelativeSource AncestorType={x:Type dt:FileDataItem}}, Path=Model.RegionVisibility}"/>
+                
+                <Label 
+                    Grid.Column="3" 
+                    VerticalOptions="CenterAndExpand"
+                    VerticalTextAlignment="Center"
+                    Text="{Binding Source={RelativeSource AncestorType={x:Type dt:FileDataItem}}, Path=File.Extension}"/>
+
+                <ImageButton
+                    Grid.Column="5"
+                    Margin="0,8"
+                    Source="cross.png"
+                    Padding="4"
+                    BackgroundColor="{StaticResource Red}"
+                    CornerRadius="8"
+                    ToolTipProperties.Text="Remove"
+                    Command="{Binding Source={RelativeSource AncestorType={x:Type dt:FileDataItem}}, Path=RemoveItemCommand}"/>
+            </Grid>
+        </ViewCell>
+    </DataTemplate>
+</ResourceDictionary>

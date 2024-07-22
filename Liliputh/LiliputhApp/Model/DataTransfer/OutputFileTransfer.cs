@@ -3,18 +3,23 @@
 internal struct OutputFileTransfer
 {
     internal readonly string[] Lines;
-    internal readonly string OutputPath;
+    internal readonly string Filename;
+    internal readonly string Directory;
     internal bool Error;
     internal FileExtensions Extension;
 
-    internal OutputFileTransfer(IEnumerable<string> lines, string outputPath, FileExtensions extension)
+    internal string OutputPath => Path.Combine(Directory, Filename);
+
+    internal OutputFileTransfer(IEnumerable<string> lines, string directory, string filename, FileExtensions extension)
     {
         Lines = lines.ToArray();
-        OutputPath = outputPath;
+        Directory = directory;
+        Filename = filename;
         Error = false;
+        Extension = extension;
     }
 
-    internal static OutputFileTransfer FailedFile => new([], "", FileExtensions.NOTACCEPTED)
+    internal static OutputFileTransfer FailedFile => new([], "", "", FileExtensions.NOTACCEPTED)
     {
         Error = true
     };
