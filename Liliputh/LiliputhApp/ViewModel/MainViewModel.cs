@@ -163,7 +163,7 @@ public sealed class MainViewModel : BaseViewModel
 
     public MainViewModel()
     {
-        m_title = "Liliputh";
+        m_title = "Lili";
 
         m_files = new();
         m_errorMessages = new();
